@@ -1,0 +1,13 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.tmp
+*.log
+*.exe
+*.lnk
+*.xbf
+*.pri
+*.deps.json
+*.runtimeconfig.json
