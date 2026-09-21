@@ -7,7 +7,10 @@ obj/
 *.log
 *.exe
 *.lnk
+*.dll
+*.pdb
 *.xbf
 *.pri
 *.deps.json
 *.runtimeconfig.json
+runtimes/
