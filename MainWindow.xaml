@@ -26,37 +26,39 @@
         <TextBlock Text="DEV" FontSize="10" FontWeight="Bold" Foreground="#86c440" VerticalAlignment="Top" Margin="-4,3,0,0" />
       </StackPanel>
       <StackPanel Grid.Row="1" Spacing="8" Margin="0,18,0,0">
-        <Button Click="Play_Click" Style="{StaticResource NavButtonStyle}" Background="#202520">
-          <StackPanel Orientation="Horizontal" Spacing="14"><TextBlock Text="♟" FontFamily="Segoe UI Symbol" FontSize="20" /><TextBlock Text="Play" /></StackPanel>
+        <Button x:Name="HomeButton" Click="Home_Click" Style="{StaticResource NavButtonStyle}">
+          <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="⌂" FontSize="21" Margin="0,-2,0,2" VerticalAlignment="Center" /><TextBlock Text="Home" VerticalAlignment="Center" /></StackPanel>
+        </Button>
+        <Button x:Name="PlayButton" Click="Play_Click" Style="{StaticResource NavButtonStyle}">
+          <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="♟" FontFamily="Segoe UI Symbol" FontSize="20" Margin="0,-2,0,2" VerticalAlignment="Center" /><TextBlock Text="Play" VerticalAlignment="Center" /></StackPanel>
         </Button>
         <StackPanel x:Name="PlaySubmenu" Visibility="Collapsed" Margin="18,0,0,4" Spacing="2">
-          <Button Click="Online_Click" Content="Online" Style="{StaticResource NavButtonStyle}" />
-          <Button Click="Bots_Click" Content="Bots" Style="{StaticResource NavButtonStyle}" Background="#202520" />
-          <Button Click="InPerson_Click" Content="In person" Style="{StaticResource NavButtonStyle}" />
-          <Button Click="Special_Click" Content="Special" Style="{StaticResource NavButtonStyle}" />
+          <Button x:Name="OnlineButton" Click="Online_Click" Content="Online" Style="{StaticResource NavButtonStyle}" />
+          <Button x:Name="BotsButton" Click="Bots_Click" Content="Bots" Style="{StaticResource NavButtonStyle}" />
+          <Button x:Name="InPersonButton" Click="InPerson_Click" Content="In person" Style="{StaticResource NavButtonStyle}" />
+          <Button x:Name="SpecialButton" Click="Special_Click" Content="Special" Style="{StaticResource NavButtonStyle}" />
         </StackPanel>
-        <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><TextBlock Text="♞" FontFamily="Segoe UI Symbol" FontSize="20" /><TextBlock Text="Puzzles" /></StackPanel></Button>
-        <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><TextBlock Text="◇" FontSize="22" /><TextBlock Text="Learn" /></StackPanel></Button>
-        <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14"><TextBlock Text="◌" FontSize="24" /><TextBlock Text="Watch" /></StackPanel></Button>
+        <Button x:Name="PuzzlesButton" Click="Puzzles_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="♞" FontFamily="Segoe UI Symbol" FontSize="20" Margin="0,-2,0,2" VerticalAlignment="Center" /><TextBlock Text="Puzzles" VerticalAlignment="Center" /></StackPanel></Button>
+        <Button x:Name="LearnButton" Click="Learn_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><Canvas Width="24" Height="22" VerticalAlignment="Center"><Line X1="4" Y1="7.5" X2="21" Y2="7.5" Stroke="#b7b7b7" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" /><Line X1="1" Y1="14.5" X2="18" Y2="14.5" Stroke="#b7b7b7" StrokeThickness="3" StrokeStartLineCap="Round" StrokeEndLineCap="Round" /></Canvas><TextBlock Text="Learn" VerticalAlignment="Center" /></StackPanel></Button>
+        <Button x:Name="WatchButton" Click="Watch_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center"><TextBlock Text="▶" FontFamily="Segoe UI Symbol" FontSize="17" Margin="0,-1,0,1" VerticalAlignment="Center" /><TextBlock Text="Watch" VerticalAlignment="Center" /></StackPanel></Button>
       </StackPanel>
       <StackPanel Grid.Row="2" Spacing="15">
-        <Button Style="{StaticResource QuietButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="12"><TextBlock Text="⚙" FontSize="18" /><TextBlock Text="Settings" /></StackPanel></Button>
+        <Button x:Name="SettingsButton" Click="Settings_Click" Style="{StaticResource QuietButtonStyle}"><StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center"><TextBlock Text="⚙" FontFamily="Segoe UI Symbol" FontSize="18" Margin="0,-2,0,2" VerticalAlignment="Center" /><TextBlock Text="Settings" VerticalAlignment="Center" /></StackPanel></Button>
         <Button Click="GuestAccount_Click" Style="{StaticResource AccountButtonStyle}" BorderBrush="#242424" BorderThickness="0,1,0,0" Padding="0,14,0,0" MinHeight="62" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
           <StackPanel Orientation="Horizontal" Spacing="10"><Border Width="30" Height="30" CornerRadius="15" Background="#29382a"><TextBlock x:Name="AccountAvatar" Text="G" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#b8da84" FontWeight="Bold" /></Border><StackPanel><TextBlock x:Name="AccountNameText" Text="Guest" Foreground="#eeeeee" /><TextBlock x:Name="AccountStatusText" Text="Create a local account" FontSize="11" Foreground="#888888" /></StackPanel></StackPanel>
         </Button>
       </StackPanel>
     </Grid>
 
-    <Grid x:Name="BotsContent" Grid.Column="1" Margin="28,0,28,0" HorizontalAlignment="Center" MaxWidth="760">
-      <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-      <Grid Margin="0,0,0,16">
-        <StackPanel Orientation="Horizontal" Spacing="12">
-          <Border Width="38" Height="38" CornerRadius="19" Background="#202020"><TextBlock Text="G" Foreground="#d8d8d8" FontWeight="Bold" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-          <StackPanel VerticalAlignment="Center"><TextBlock Text="Guest" Foreground="#f0f0f0" FontWeight="SemiBold" /><TextBlock Text="White" Foreground="#7d7d7d" FontSize="12" /></StackPanel>
-        </StackPanel>
-        <TextBlock Text="Chess v1.0.1-preview.1" HorizontalAlignment="Right" Foreground="#707070" FontSize="12" VerticalAlignment="Center" />
-      </Grid>
-      <Grid Grid.Row="1" Width="700" Height="700" MaxWidth="{Binding ActualWidth, ElementName=BoardHost}" MaxHeight="{Binding ActualHeight, ElementName=BoardHost}" x:Name="BoardHost" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Grid x:Name="HomeContent" Grid.Column="1" Grid.ColumnSpan="2" Margin="28,0,28,0" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="760">
+      <StackPanel Spacing="12" HorizontalAlignment="Center">
+        <TextBlock Text="Welcome home" Foreground="#eeeeee" FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center" />
+        <TextBlock Text="Choose a section to get started." Foreground="#8e8e8e" FontSize="14" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Grid>
+
+    <Grid x:Name="BotsContent" Grid.Column="1" Margin="28,0,28,0" HorizontalAlignment="Center" MaxWidth="760" Visibility="Collapsed">
+      <Grid Width="700" Height="700" MaxWidth="{Binding ActualWidth, ElementName=BoardHost}" MaxHeight="{Binding ActualHeight, ElementName=BoardHost}" x:Name="BoardHost" HorizontalAlignment="Center" VerticalAlignment="Center">
         <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
         <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
 
@@ -71,7 +73,7 @@
       </Grid>
     </Grid>
 
-    <Border x:Name="EngineContent" Grid.Column="2" Background="#111111" BorderBrush="#282828" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,20">
+    <Border x:Name="EngineContent" Grid.Column="2" Background="#111111" BorderBrush="#282828" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,20" Visibility="Collapsed">
       <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Spacing="10"><Border Width="32" Height="32" CornerRadius="8" Background="#86c440"><TextBlock Text="01" Foreground="#050505" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border><StackPanel><TextBlock Text="Engine" Foreground="#f5f5f5" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Computer opponent" Foreground="#858585" FontSize="11" /></StackPanel><Ellipse Width="8" Height="8" Fill="#86c440" VerticalAlignment="Center" HorizontalAlignment="Right" /></StackPanel>
@@ -93,7 +95,7 @@
             <StackPanel><TextBlock Text="Your Chess account" Foreground="#ffffff" FontSize="26" FontWeight="SemiBold" /><TextBlock Text="Saved locally on this computer" Foreground="#8d8d8d" FontSize="13" Margin="0,4,0,0" /></StackPanel>
             <Button Content="×" Click="CloseAccount_Click" Style="{StaticResource DialogCloseButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Top" />
           </Grid>
-          <Grid ColumnSpacing="8">
+          <Grid x:Name="AccountTabs" ColumnSpacing="8">
             <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
             <Button x:Name="SignUpTab" Grid.Column="0" Content="Sign Up" Click="ShowSignUp_Click" Style="{StaticResource AccountTabStyle}" Foreground="#ffffff" />
             <Button x:Name="LogInTab" Grid.Column="1" Content="Log In" Click="ShowLogIn_Click" Style="{StaticResource AccountTabStyle}" Foreground="#86c440" />
@@ -108,6 +110,7 @@
             <TextBox x:Name="LogInUsername" PlaceholderText="Username" Style="{StaticResource AccountTextBoxStyle}" />
             <PasswordBox x:Name="LogInPassword" PlaceholderText="Password" Style="{StaticResource AccountPasswordBoxStyle}" />
             <Button Content="Log in" Click="LogIn_Click" Style="{StaticResource GreenActionButtonStyle}" />
+            <Button Content="Don't have an account? Create one!" Click="CreateAccountPrompt_Click" Style="{StaticResource QuietButtonStyle}" HorizontalAlignment="Center" />
           </StackPanel>
           <TextBlock x:Name="AccountErrorText" Foreground="#ef8a8a" FontSize="12" TextWrapping="Wrap" />
         </StackPanel>

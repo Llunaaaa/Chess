@@ -19,6 +19,7 @@ namespace Chess;
 public sealed partial class MainWindow : Window
 {
     public bool RedirectedToNewerVersion { get; }
+    private Button? activeSectionButton;
 
     public MainWindow()
     {
@@ -36,8 +37,11 @@ public sealed partial class MainWindow : Window
         var appWindow = AppWindow.GetFromWindowId(windowId);
         appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "chessicon.ico"));
 
-        Title = "Chess v1.0.1-preview.1";
-        RestoreLoggedInAccount();
+        Title = "Chess v1.0.1-preview.3";
+        if (!RestoreLoggedInAccount())
+        {
+            ShowLoginPrompt();
+        }
     }
 
     private string AccountsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessAccounts.json");
@@ -46,29 +50,75 @@ public sealed partial class MainWindow : Window
     private void GuestAccount_Click(object sender, RoutedEventArgs e)
     {
         AccountOverlay.Visibility = Visibility.Visible;
+        AccountTabs.Visibility = Visibility.Visible;
         ShowSignUp_Click(sender, e);
     }
+
+    private void Home_Click(object sender, RoutedEventArgs e) => ShowMenu(HomeContent);
+
+    private void Puzzles_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, PuzzlesButton);
+
+    private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, LearnButton);
+
+    private void Watch_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, WatchButton);
+
+    private void Settings_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SettingsButton);
+
+    private void CreateAccountPrompt_Click(object sender, RoutedEventArgs e) => ShowSignUp_Click(sender, e);
 
     private void Play_Click(object sender, RoutedEventArgs e)
     {
         PlaySubmenu.Visibility = PlaySubmenu.Visibility == Visibility.Visible
             ? Visibility.Collapsed
             : Visibility.Visible;
+        if (activeSectionButton == OnlineButton || activeSectionButton == BotsButton || activeSectionButton == InPersonButton || activeSectionButton == SpecialButton)
+        {
+            SetActiveNavigation(activeSectionButton);
+        }
+        else
+        {
+            activeSectionButton = PlayButton;
+            SetActiveNavigation(PlayButton);
+        }
     }
 
-    private void Online_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent);
+    private void Online_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, OnlineButton);
 
-    private void Bots_Click(object sender, RoutedEventArgs e) => ShowMenu(BotsContent);
+    private void Bots_Click(object sender, RoutedEventArgs e) => ShowMenu(BotsContent, BotsButton);
 
-    private void InPerson_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent);
+    private void InPerson_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, InPersonButton);
 
-    private void Special_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent);
+    private void Special_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SpecialButton);
 
-    private void ShowMenu(UIElement selectedContent)
+    private void ShowMenu(UIElement selectedContent, Button? selectedButton = null)
     {
+        HomeContent.Visibility = selectedContent == HomeContent ? Visibility.Visible : Visibility.Collapsed;
         BotsContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EngineContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EmptyMenuContent.Visibility = selectedContent == EmptyMenuContent ? Visibility.Visible : Visibility.Collapsed;
+        SetActiveNavigation(selectedButton ?? (selectedContent == HomeContent ? HomeButton : PlayButton));
+    }
+
+    private void SetActiveNavigation(Button selectedButton)
+    {
+        activeSectionButton = selectedButton;
+        var inactiveBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+        var activeBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 32, 37, 32));
+        HomeButton.Background = inactiveBrush;
+        PlayButton.Background = inactiveBrush;
+        OnlineButton.Background = inactiveBrush;
+        BotsButton.Background = inactiveBrush;
+        InPersonButton.Background = inactiveBrush;
+        SpecialButton.Background = inactiveBrush;
+        PuzzlesButton.Background = inactiveBrush;
+        LearnButton.Background = inactiveBrush;
+        WatchButton.Background = inactiveBrush;
+        SettingsButton.Background = inactiveBrush;
+        selectedButton.Background = activeBrush;
+        if (selectedButton == OnlineButton || selectedButton == BotsButton || selectedButton == InPersonButton || selectedButton == SpecialButton)
+        {
+            PlayButton.Background = activeBrush;
+        }
     }
 
     private void CloseAccount_Click(object sender, RoutedEventArgs e) => AccountOverlay.Visibility = Visibility.Collapsed;
@@ -143,16 +193,24 @@ public sealed partial class MainWindow : Window
         AccountStatusText.Text = "Local account";
         AccountAvatar.Text = username[..1].ToUpperInvariant();
         AccountOverlay.Visibility = Visibility.Collapsed;
+        ShowMenu(HomeContent);
         SaveCurrentAccount(username);
     }
 
-    private void RestoreLoggedInAccount()
+    private void ShowLoginPrompt()
+    {
+        AccountOverlay.Visibility = Visibility.Visible;
+        AccountTabs.Visibility = Visibility.Collapsed;
+        ShowLogIn_Click(this, new RoutedEventArgs());
+    }
+
+    private bool RestoreLoggedInAccount()
     {
         try
         {
             if (!File.Exists(CurrentAccountPath))
             {
-                return;
+                return false;
             }
 
             var username = File.ReadAllText(CurrentAccountPath).Trim();
@@ -160,11 +218,14 @@ public sealed partial class MainWindow : Window
             if (account is not null)
             {
                 LogInAccount(account.Username);
+                return true;
             }
         }
         catch (IOException)
         {
         }
+
+        return false;
     }
 
     private void SaveCurrentAccount(string username)
