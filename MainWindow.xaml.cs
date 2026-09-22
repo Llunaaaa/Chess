@@ -12,7 +12,9 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using WinRT.Interop;
+using Windows.System;
 
 namespace Chess;
 
@@ -20,6 +22,7 @@ public sealed partial class MainWindow : Window
 {
     public bool RedirectedToNewerVersion { get; }
     private Button? activeSectionButton;
+    private AppWindow? appWindow;
 
     public MainWindow()
     {
@@ -34,24 +37,137 @@ public sealed partial class MainWindow : Window
 
         var windowHandle = WindowNative.GetWindowHandle(this);
         var windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
-        var appWindow = AppWindow.GetFromWindowId(windowId);
+        appWindow = AppWindow.GetFromWindowId(windowId);
         appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "chessicon.ico"));
+        RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
 
-        Title = "Chess v1.0.1-preview.3";
+        Title = "Chess v1.0.1";
         if (!RestoreLoggedInAccount())
         {
             ShowLoginPrompt();
         }
     }
 
+    private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key == VirtualKey.F11 && appWindow is not null)
+        {
+            appWindow.SetPresenter(appWindow.Presenter.Kind == AppWindowPresenterKind.FullScreen
+                ? AppWindowPresenterKind.Overlapped
+                : AppWindowPresenterKind.FullScreen);
+            args.Handled = true;
+        }
+    }
+
     private string AccountsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessAccounts.json");
     private string CurrentAccountPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessCurrentAccount.txt");
 
-    private void GuestAccount_Click(object sender, RoutedEventArgs e)
+    private void AccountButton_Click(object sender, RoutedEventArgs e)
+    {
+        AccountActions.Visibility = AccountActions.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        AccountList.Visibility = Visibility.Collapsed;
+        SignOutConfirmation.Visibility = Visibility.Collapsed;
+        SignOutButton.Visibility = Visibility.Visible;
+    }
+
+    private void AccountButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 58, 58, 58));
+        }
+    }
+
+    private void AccountButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            button.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+        }
+    }
+
+    private void LogoHoverSurface_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        LogoHoverSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 58, 58, 58));
+    }
+
+    private void LogoHoverSurface_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        LogoHoverSurface.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+    }
+
+    private void SwitchAccount_Click(object sender, RoutedEventArgs e)
+    {
+        AccountList.Children.Clear();
+        foreach (var account in LoadAccounts())
+        {
+            var accountButton = new Button
+            {
+                Content = account.Username,
+                Tag = account.Username,
+                Style = (Style)Application.Current.Resources["NavButtonStyle"],
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
+            accountButton.Click += AccountChoice_Click;
+            AccountList.Children.Add(accountButton);
+        }
+
+        var manageAccountsButton = new Button
+        {
+            Content = "Manage Accounts",
+            Style = (Style)Application.Current.Resources["QuietButtonStyle"],
+            HorizontalContentAlignment = HorizontalAlignment.Left
+        };
+        manageAccountsButton.Click += ManageAccounts_Click;
+        AccountList.Children.Add(manageAccountsButton);
+        AccountList.Visibility = AccountList.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    private void AccountChoice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string username })
+        {
+            LogInAccount(username);
+            AccountActions.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ManageAccounts_Click(object sender, RoutedEventArgs e)
     {
         AccountOverlay.Visibility = Visibility.Visible;
         AccountTabs.Visibility = Visibility.Visible;
         ShowSignUp_Click(sender, e);
+    }
+
+    private void SignOut_Click(object sender, RoutedEventArgs e)
+    {
+        SignOutButton.Visibility = Visibility.Collapsed;
+        SignOutConfirmation.Visibility = Visibility.Visible;
+        AccountList.Visibility = Visibility.Collapsed;
+    }
+
+    private void ConfirmSignOut_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            File.Delete(CurrentAccountPath);
+        }
+        catch (IOException)
+        {
+        }
+
+        AccountActions.Visibility = Visibility.Collapsed;
+        ShowLoginPrompt();
+    }
+
+    private void CancelSignOut_Click(object sender, RoutedEventArgs e)
+    {
+        SignOutConfirmation.Visibility = Visibility.Collapsed;
+        SignOutButton.Visibility = Visibility.Visible;
     }
 
     private void Home_Click(object sender, RoutedEventArgs e) => ShowMenu(HomeContent);
@@ -63,6 +179,27 @@ public sealed partial class MainWindow : Window
     private void Watch_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, WatchButton);
 
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SettingsButton);
+
+    private void TimeControl_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button selectedButton)
+        {
+            return;
+        }
+
+        var inactiveBackground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 34, 34, 34));
+        var inactiveBorder = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+        var activeBackground = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 37, 43, 37));
+        var activeBorder = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 134, 196, 64));
+        BlitzButton.Background = inactiveBackground;
+        BlitzButton.BorderBrush = inactiveBorder;
+        RapidButton.Background = inactiveBackground;
+        RapidButton.BorderBrush = inactiveBorder;
+        BulletButton.Background = inactiveBackground;
+        BulletButton.BorderBrush = inactiveBorder;
+        selectedButton.Background = activeBackground;
+        selectedButton.BorderBrush = activeBorder;
+    }
 
     private void CreateAccountPrompt_Click(object sender, RoutedEventArgs e) => ShowSignUp_Click(sender, e);
 
