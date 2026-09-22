@@ -1,2 +1,0 @@
-# Chess
-Custom Chess App
