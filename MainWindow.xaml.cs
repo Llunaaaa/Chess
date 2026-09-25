@@ -1,7 +1,5 @@
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,20 +18,13 @@ namespace Chess;
 
 public sealed partial class MainWindow : Window
 {
-    public bool RedirectedToNewerVersion { get; }
     private Button? activeSectionButton;
     private AppWindow? appWindow;
+    private readonly Random random = new();
 
     public MainWindow()
     {
         InitializeComponent();
-
-        if (TryLaunchNewerVersion())
-        {
-            RedirectedToNewerVersion = true;
-            Close();
-            return;
-        }
 
         var windowHandle = WindowNative.GetWindowHandle(this);
         var windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
@@ -41,7 +32,7 @@ public sealed partial class MainWindow : Window
         appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "chessicon.ico"));
         RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
 
-        Title = "Chess v1.0.1";
+        Title = "Chess v1.0.2-dev.4";
         if (!RestoreLoggedInAccount())
         {
             ShowLoginPrompt();
@@ -59,8 +50,11 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private string AccountsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessAccounts.json");
-    private string CurrentAccountPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessCurrentAccount.txt");
+    private string UserDataDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Chess");
+    private string AccountsPath => Path.Combine(UserDataDirectory, "ChessAccounts.json");
+    private string CurrentAccountPath => Path.Combine(UserDataDirectory, "ChessCurrentAccount.txt");
+    private string LegacyAccountsPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessAccounts.json");
+    private string LegacyCurrentAccountPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ChessCurrentAccount.txt");
 
     private void AccountButton_Click(object sender, RoutedEventArgs e)
     {
@@ -68,8 +62,6 @@ public sealed partial class MainWindow : Window
             ? Visibility.Collapsed
             : Visibility.Visible;
         AccountList.Visibility = Visibility.Collapsed;
-        SignOutConfirmation.Visibility = Visibility.Collapsed;
-        SignOutButton.Visibility = Visibility.Visible;
     }
 
     private void AccountButton_PointerEntered(object sender, PointerRoutedEventArgs e)
@@ -143,40 +135,11 @@ public sealed partial class MainWindow : Window
         ShowSignUp_Click(sender, e);
     }
 
-    private void SignOut_Click(object sender, RoutedEventArgs e)
-    {
-        SignOutButton.Visibility = Visibility.Collapsed;
-        SignOutConfirmation.Visibility = Visibility.Visible;
-        AccountList.Visibility = Visibility.Collapsed;
-    }
-
-    private void ConfirmSignOut_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            File.Delete(CurrentAccountPath);
-        }
-        catch (IOException)
-        {
-        }
-
-        AccountActions.Visibility = Visibility.Collapsed;
-        ShowLoginPrompt();
-    }
-
-    private void CancelSignOut_Click(object sender, RoutedEventArgs e)
-    {
-        SignOutConfirmation.Visibility = Visibility.Collapsed;
-        SignOutButton.Visibility = Visibility.Visible;
-    }
-
     private void Home_Click(object sender, RoutedEventArgs e) => ShowMenu(HomeContent);
 
     private void Puzzles_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, PuzzlesButton);
 
     private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, LearnButton);
-
-    private void Watch_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, WatchButton);
 
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SettingsButton);
 
@@ -208,7 +171,7 @@ public sealed partial class MainWindow : Window
         PlaySubmenu.Visibility = PlaySubmenu.Visibility == Visibility.Visible
             ? Visibility.Collapsed
             : Visibility.Visible;
-        if (activeSectionButton == OnlineButton || activeSectionButton == BotsButton || activeSectionButton == InPersonButton || activeSectionButton == SpecialButton)
+        if (activeSectionButton == BotsButton || activeSectionButton == InPersonButton)
         {
             SetActiveNavigation(activeSectionButton);
         }
@@ -219,21 +182,50 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void Online_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, OnlineButton);
-
     private void Bots_Click(object sender, RoutedEventArgs e) => ShowMenu(BotsContent, BotsButton);
 
     private void InPerson_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, InPersonButton);
 
-    private void Special_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SpecialButton);
-
     private void ShowMenu(UIElement selectedContent, Button? selectedButton = null)
     {
+        if (selectedContent == HomeContent)
+        {
+            SetWelcomeMessage();
+        }
+
         HomeContent.Visibility = selectedContent == HomeContent ? Visibility.Visible : Visibility.Collapsed;
         BotsContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EngineContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EmptyMenuContent.Visibility = selectedContent == EmptyMenuContent ? Visibility.Visible : Visibility.Collapsed;
         SetActiveNavigation(selectedButton ?? (selectedContent == HomeContent ? HomeButton : PlayButton));
+    }
+
+    private void SetWelcomeMessage()
+    {
+        var messagesPath = Path.Combine(AppContext.BaseDirectory, "WelcomeMessages.json");
+        var messages = new List<string>();
+
+        try
+        {
+            if (File.Exists(messagesPath))
+            {
+                messages = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(messagesPath)) ?? messages;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+
+        if (messages.Count == 0)
+        {
+            messages.Add("Welcome back, {username}");
+        }
+
+        var message = messages[random.Next(messages.Count)];
+        WelcomeMessageText.Text = message.Replace("{username}", AccountNameText.Text, StringComparison.Ordinal);
     }
 
     private void SetActiveNavigation(Button selectedButton)
@@ -243,22 +235,25 @@ public sealed partial class MainWindow : Window
         var activeBrush = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 32, 37, 32));
         HomeButton.Background = inactiveBrush;
         PlayButton.Background = inactiveBrush;
-        OnlineButton.Background = inactiveBrush;
         BotsButton.Background = inactiveBrush;
         InPersonButton.Background = inactiveBrush;
-        SpecialButton.Background = inactiveBrush;
         PuzzlesButton.Background = inactiveBrush;
         LearnButton.Background = inactiveBrush;
-        WatchButton.Background = inactiveBrush;
         SettingsButton.Background = inactiveBrush;
         selectedButton.Background = activeBrush;
-        if (selectedButton == OnlineButton || selectedButton == BotsButton || selectedButton == InPersonButton || selectedButton == SpecialButton)
+        if (selectedButton == BotsButton || selectedButton == InPersonButton)
         {
             PlayButton.Background = activeBrush;
         }
     }
 
-    private void CloseAccount_Click(object sender, RoutedEventArgs e) => AccountOverlay.Visibility = Visibility.Collapsed;
+    private void CloseAccount_Click(object sender, RoutedEventArgs e)
+    {
+        if (AccountNameText.Text != "Guest")
+        {
+            AccountOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
 
     private void ShowSignUp_Click(object sender, RoutedEventArgs e)
     {
@@ -273,9 +268,31 @@ public sealed partial class MainWindow : Window
     {
         SignUpFields.Visibility = Visibility.Collapsed;
         LogInFields.Visibility = Visibility.Visible;
+        LoginAccountList.Visibility = Visibility.Collapsed;
         SignUpTab.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 32, 32, 32));
         LogInTab.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 54, 54, 54));
         AccountErrorText.Text = string.Empty;
+    }
+
+    private void ShowLoginAccountList_Click(object sender, RoutedEventArgs e)
+    {
+        LoginAccountList.Children.Clear();
+        foreach (var account in LoadAccounts())
+        {
+            var accountButton = new Button
+            {
+                Content = account.Username,
+                Tag = account.Username,
+                Style = (Style)Application.Current.Resources["NavButtonStyle"],
+                HorizontalContentAlignment = HorizontalAlignment.Left
+            };
+            accountButton.Click += AccountChoice_Click;
+            LoginAccountList.Children.Add(accountButton);
+        }
+
+        LoginAccountList.Visibility = LoginAccountList.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
     }
 
     private void CreateAccount_Click(object sender, RoutedEventArgs e)
@@ -337,7 +354,7 @@ public sealed partial class MainWindow : Window
     private void ShowLoginPrompt()
     {
         AccountOverlay.Visibility = Visibility.Visible;
-        AccountTabs.Visibility = Visibility.Collapsed;
+        AccountTabs.Visibility = Visibility.Visible;
         ShowLogIn_Click(this, new RoutedEventArgs());
     }
 
@@ -345,6 +362,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            MigrateLegacyAccountData();
             if (!File.Exists(CurrentAccountPath))
             {
                 return false;
@@ -369,6 +387,7 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            Directory.CreateDirectory(UserDataDirectory);
             File.WriteAllText(CurrentAccountPath, username);
         }
         catch (IOException)
@@ -380,9 +399,18 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            Directory.CreateDirectory(UserDataDirectory);
             if (File.Exists(AccountsPath))
             {
-                return JsonSerializer.Deserialize<List<LocalAccount>>(File.ReadAllText(AccountsPath)) ?? new List<LocalAccount>();
+                var accounts = JsonSerializer.Deserialize<List<LocalAccount>>(File.ReadAllText(AccountsPath)) ?? new List<LocalAccount>();
+                foreach (var account in accounts)
+                {
+                    account.Data ??= new AccountData();
+                    account.Data.Progression ??= new Dictionary<string, string>();
+                    account.Data.GameLog ??= new List<string>();
+                    account.Data.Preferences ??= new Dictionary<string, string>();
+                }
+                return accounts;
             }
         }
         catch (JsonException)
@@ -394,8 +422,24 @@ public sealed partial class MainWindow : Window
 
     private void SaveAccounts(List<LocalAccount> accounts)
     {
+        Directory.CreateDirectory(UserDataDirectory);
         var json = JsonSerializer.Serialize(accounts, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(AccountsPath, json);
+    }
+
+    private void MigrateLegacyAccountData()
+    {
+        Directory.CreateDirectory(UserDataDirectory);
+
+        if (!File.Exists(AccountsPath) && File.Exists(LegacyAccountsPath))
+        {
+            File.Copy(LegacyAccountsPath, AccountsPath);
+        }
+
+        if (!File.Exists(CurrentAccountPath) && File.Exists(LegacyCurrentAccountPath))
+        {
+            File.Copy(LegacyCurrentAccountPath, CurrentAccountPath);
+        }
     }
 
     private static string HashPassword(string password)
@@ -408,57 +452,14 @@ public sealed partial class MainWindow : Window
     {
         public string Username { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
+        public AccountData Data { get; set; } = new();
     }
 
-    private static bool TryLaunchNewerVersion()
+    private sealed class AccountData
     {
-        var currentPath = Environment.ProcessPath;
-        var projectRoot = FindProjectRoot();
-        if (currentPath is null || projectRoot is null)
-        {
-            return false;
-        }
-
-        var currentWriteTime = File.GetLastWriteTimeUtc(currentPath);
-        var newerBuild = Directory.EnumerateFiles(Path.Combine(projectRoot, "bin"), "Chess.exe", SearchOption.AllDirectories)
-            .Where(path => !string.Equals(Path.GetFullPath(path), Path.GetFullPath(currentPath), StringComparison.OrdinalIgnoreCase))
-            .Select(path => new
-            {
-                Path = path,
-                WriteTime = File.GetLastWriteTimeUtc(path)
-            })
-            .Where(build => build.WriteTime > currentWriteTime)
-            .OrderByDescending(build => build.WriteTime)
-            .FirstOrDefault();
-
-        if (newerBuild is null)
-        {
-            return false;
-        }
-
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = newerBuild.Path,
-            WorkingDirectory = Path.GetDirectoryName(newerBuild.Path),
-            UseShellExecute = true
-        });
-
-        return true;
+        public Dictionary<string, string> Progression { get; set; } = new();
+        public List<string> GameLog { get; set; } = new();
+        public Dictionary<string, string> Preferences { get; set; } = new();
     }
 
-    private static string? FindProjectRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
-        {
-            if (File.Exists(Path.Combine(directory.FullName, "Chess.csproj")))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return null;
-    }
 }

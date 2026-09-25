@@ -4,22 +4,34 @@
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>Chess</RootNamespace>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
-    <InformationalVersion>v1.0.1</InformationalVersion>
+    <Version>1.0.2-dev.4</Version>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+    <InformationalVersion>v1.0.2-dev.4</InformationalVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>false</PublishReadyToRun>
     <SelfContained>true</SelfContained>
-    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <ChessPackaged Condition="'$(ChessPackaged)' == ''">true</ChessPackaged>
+    <ChessPackageManifest Condition="'$(ChessPackageManifest)' == ''">Package.appxmanifest</ChessPackageManifest>
+    <WindowsPackageType Condition="'$(ChessPackaged)' == 'true'">MSIX</WindowsPackageType>
+    <WindowsPackageType Condition="'$(ChessPackaged)' != 'true'">None</WindowsPackageType>
+    <EnableMsixTooling Condition="'$(ChessPackaged)' == 'true'">true</EnableMsixTooling>
+    <EnableMsixTooling Condition="'$(ChessPackaged)' != 'true'">false</EnableMsixTooling>
     <UseWinUI>true</UseWinUI>
     <AppxMSBuildToolsPath Condition="Exists('$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VisualStudio\v17.0\AppxPackage\Microsoft.Build.Packaging.Pri.Tasks.dll')">$(ProgramFiles)\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VisualStudio\v17.0\AppxPackage\</AppxMSBuildToolsPath>
+    <AppxBundle>Never</AppxBundle>
+    <AppxPackage Condition="'$(ChessPackaged)' == 'true'">true</AppxPackage>
+    <AppxPackageSigningEnabled Condition="'$(AppxPackageSigningEnabled)' == ''">false</AppxPackageSigningEnabled>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.250205002" />
+    <AppxManifest Include="$(ChessPackageManifest)" Condition="'$(ChessPackaged)' == 'true'" />
     <Content Include="chessicon.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="WelcomeMessages.json" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Sounds\Reference\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="PackageAssets\**\*" Condition="'$(ChessPackaged)' == 'true'" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

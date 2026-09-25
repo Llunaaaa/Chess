@@ -14,9 +14,6 @@ public partial class App : Application
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         window = new MainWindow();
-        if (!window.RedirectedToNewerVersion)
-        {
-            window.Activate();
-        }
+        window.Activate();
     }
 }

@@ -1,0 +1,59 @@
+name: Release Chess
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: 8.0.x
+
+jobs:
+  package:
+    runs-on: windows-2022
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Set up Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress --yes
+
+      - name: Import signing certificate
+        shell: pwsh
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+        run: |
+          if ($env:CERTIFICATE_BASE64) {
+            [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\chess-signing.pfx", [Convert]::FromBase64String($env:CERTIFICATE_BASE64))
+          } else {
+            Write-Host "No signing certificate configured; building an unsigned installer."
+          }
+
+      - name: Build and sign packaged installer
+        shell: pwsh
+        env:
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          $version = "${{ github.event.release.tag_name }}".TrimStart("v")
+          if (-not (Test-Path "$env:RUNNER_TEMP\chess-signing.pfx")) {
+            throw "A trusted Windows signing certificate is required for public packaged releases."
+          }
+          $arguments = @("-Version", $version)
+          $arguments += @("-CertificatePath", "$env:RUNNER_TEMP\chess-signing.pfx", "-CertificatePassword", $env:CERTIFICATE_PASSWORD)
+          ./Installer/Build-Packaged-Installer.ps1 @arguments
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Get-ChildItem artifacts/packaged-installer/*-setup.exe | Select-Object -First 1
+          gh release upload "${{ github.event.release.tag_name }}" $installer.FullName "$($installer.FullName).sha256" --clobber
