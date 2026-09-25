@@ -11,6 +11,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using WinRT.Interop;
 using Windows.System;
 
@@ -21,6 +22,10 @@ public sealed partial class MainWindow : Window
     private Button? activeSectionButton;
     private AppWindow? appWindow;
     private readonly Random random = new();
+    private UIElement? activeContent;
+    private ScrollViewer? activeScrollViewer;
+    private int scrollDirection;
+    private double scrollVelocity;
 
     public MainWindow()
     {
@@ -31,8 +36,10 @@ public sealed partial class MainWindow : Window
         appWindow = AppWindow.GetFromWindowId(windowId);
         appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "chessicon.ico"));
         RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
+        RootGrid.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(RootGrid_KeyUp), true);
+        CompositionTarget.Rendering += OnFrame;
 
-        Title = "Chess v1.0.2-dev.5";
+        Title = "Chess v1.0.2-dev.6";
         if (!RestoreLoggedInAccount())
         {
             ShowLoginPrompt();
@@ -47,7 +54,65 @@ public sealed partial class MainWindow : Window
                 ? AppWindowPresenterKind.Overlapped
                 : AppWindowPresenterKind.FullScreen);
             args.Handled = true;
+            return;
         }
+
+        if (args.Key == VirtualKey.Up)
+        {
+            scrollDirection = -1;
+            args.Handled = true;
+        }
+        else if (args.Key == VirtualKey.Down)
+        {
+            scrollDirection = 1;
+            args.Handled = true;
+        }
+        else if (args.Key == VirtualKey.Left)
+        {
+            NavigateBack();
+            args.Handled = true;
+        }
+    }
+
+    private void RootGrid_KeyUp(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key is VirtualKey.Up or VirtualKey.Down)
+        {
+            scrollDirection = 0;
+            args.Handled = true;
+        }
+    }
+
+    private void OnFrame(object? sender, object args)
+    {
+        if (activeScrollViewer is null || activeScrollViewer.ScrollableHeight <= 0)
+        {
+            scrollVelocity = 0;
+            return;
+        }
+
+        var targetVelocity = scrollDirection * Math.Max(0.35, activeScrollViewer.ViewportHeight * 0.006);
+        if (scrollDirection != 0 && Math.Sign(scrollVelocity) != 0 && Math.Sign(scrollVelocity) != scrollDirection)
+        {
+            scrollVelocity = targetVelocity * 0.35;
+        }
+        else
+        {
+            scrollVelocity += (targetVelocity - scrollVelocity) * 0.2;
+        }
+        if (scrollDirection == 0)
+        {
+            scrollVelocity *= 0.82;
+        }
+
+        if (Math.Abs(scrollVelocity) < 0.05)
+        {
+            scrollVelocity = 0;
+            return;
+        }
+
+        var offset = Math.Clamp(activeScrollViewer.VerticalOffset + scrollVelocity, 0, activeScrollViewer.ScrollableHeight);
+        activeScrollViewer.ChangeView(null, offset, null, true);
     }
 
     private string UserDataDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Chess");
@@ -141,6 +206,36 @@ public sealed partial class MainWindow : Window
 
     private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(LearnContent, LearnButton);
 
+    private void BlankLearnOption_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, LearnButton);
+
+    private void OpeningLibrary_Click(object sender, RoutedEventArgs e)
+    {
+        BuildOpeningCategories();
+        ShowMenu(OpeningLibraryContent, LearnButton);
+    }
+
+    private void BackToLearn_Click(object sender, RoutedEventArgs e) => ShowMenu(LearnContent, LearnButton);
+
+    private void BackToOpeningLibrary_Click(object sender, RoutedEventArgs e) => OpeningLibrary_Click(sender, e);
+
+    private void BackToOpeningList_Click(object sender, RoutedEventArgs e) => ShowMenu(OpeningListContent, LearnButton);
+
+    private void NavigateBack()
+    {
+        if (activeContent == OpeningLessonContent)
+        {
+            BackToOpeningList_Click(this, new RoutedEventArgs());
+        }
+        else if (activeContent == OpeningListContent)
+        {
+            BackToOpeningLibrary_Click(this, new RoutedEventArgs());
+        }
+        else if (activeContent == OpeningLibraryContent)
+        {
+            BackToLearn_Click(this, new RoutedEventArgs());
+        }
+    }
+
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SettingsButton);
 
     private void TimeControl_Click(object sender, RoutedEventArgs e)
@@ -188,6 +283,8 @@ public sealed partial class MainWindow : Window
 
     private void ShowMenu(UIElement selectedContent, Button? selectedButton = null)
     {
+        activeContent = selectedContent;
+        activeScrollViewer = selectedContent as ScrollViewer;
         if (selectedContent == HomeContent)
         {
             SetWelcomeMessage();
@@ -197,8 +294,69 @@ public sealed partial class MainWindow : Window
         BotsContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EngineContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         LearnContent.Visibility = selectedContent == LearnContent ? Visibility.Visible : Visibility.Collapsed;
+        OpeningLibraryContent.Visibility = selectedContent == OpeningLibraryContent ? Visibility.Visible : Visibility.Collapsed;
+        OpeningListContent.Visibility = selectedContent == OpeningListContent ? Visibility.Visible : Visibility.Collapsed;
+        OpeningLessonContent.Visibility = selectedContent == OpeningLessonContent ? Visibility.Visible : Visibility.Collapsed;
         EmptyMenuContent.Visibility = selectedContent == EmptyMenuContent ? Visibility.Visible : Visibility.Collapsed;
         SetActiveNavigation(selectedButton ?? (selectedContent == HomeContent ? HomeButton : PlayButton));
+    }
+
+    private void BuildOpeningCategories()
+    {
+        OpeningCategoryPanel.Children.Clear();
+        foreach (var category in OpeningCategories)
+        {
+            var button = new Button
+            {
+                Content = category.Name,
+                Tag = category,
+                Style = (Style)Application.Current.Resources["NavButtonStyle"],
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(16, 14, 16, 14),
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            button.Click += OpeningCategory_Click;
+            OpeningCategoryPanel.Children.Add(button);
+        }
+    }
+
+    private void OpeningCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: OpeningCategory category })
+        {
+            return;
+        }
+
+        OpeningListTitle.Text = category.Name;
+        OpeningListPanel.Children.Clear();
+        foreach (var opening in category.Openings)
+        {
+            var button = new Button
+            {
+                Content = opening,
+                Tag = category,
+                Style = (Style)Application.Current.Resources["NavButtonStyle"],
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(16, 12, 16, 12),
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            button.Click += Opening_Click;
+            OpeningListPanel.Children.Add(button);
+        }
+
+        ShowMenu(OpeningListContent, LearnButton);
+    }
+
+    private void Opening_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Content is not string opening || button.Tag is not OpeningCategory category)
+        {
+            return;
+        }
+
+        OpeningLessonTitle.Text = opening;
+        OpeningLessonCategory.Text = category.Name;
+        ShowMenu(OpeningLessonContent, LearnButton);
     }
 
     private void SetWelcomeMessage()
@@ -447,6 +605,28 @@ public sealed partial class MainWindow : Window
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(password));
         return Convert.ToHexString(hash);
+    }
+
+    private static readonly OpeningCategory[] OpeningCategories =
+    {
+        new("Flank & Irregular Openings", "English Opening", "Réti Opening", "King's Indian Attack", "Larsen's Opening", "Bird's Opening", "Sokolsky Opening (Polish Opening)", "Grob's Attack", "Dunst Opening", "Van't Kruijs Opening", "Mieses Opening", "Saragossa Opening", "Clemenz Opening", "Barnes Opening", "Ware Opening", "Desprez Opening", "Kadas Opening", "Amar Opening", "Amsterdam Opening"),
+        new("Semi-Open Games", "Sicilian Defense", "Caro-Kann Defense", "French Defense", "Scandinavian Defense (Center Counter)", "Pirc Defense", "Modern Defense", "Alekhine's Defense", "Nimzowitsch Defense", "Owen's Defense", "Hippopotamus Defence", "St. George Defense", "Borg Defense", "Colorado Counter", "Lemming Defense"),
+        new("Open Games", "Italian Game (Giuoco Piano)", "Ruy Lopez (Spanish Game)", "Petrov's Defense (Russian Game)", "Scotch Game", "Two Knights Defense", "Four Knights Game", "Vienna Game", "Philidor Defense", "King's Gambit", "Bishop's Opening", "Center Game", "Ponziani Opening", "Alapin's Opening", "Hungarian Defense", "Portuguese Opening", "Inverted Hungarian", "Konstantinopolsky Opening", "MacLeod Attack"),
+        new("Closed & Semi-Closed Games", "Queen's Gambit", "London System", "King's Indian Defense", "Queen's Gambit Declined", "Slav Defense", "Nimzo-Indian Defense", "Grünfeld Defense", "Semi-Slav Defense", "Catalan Opening", "Dutch Defense", "Queen's Indian Defense", "Queen's Gambit Accepted", "Benoni Defense", "Trompowsky Attack", "Colle System", "Tarrasch Defense", "Bogo-Indian Defense", "Torre Attack", "Stonewall Attack", "Chigorin Defense", "Richter-Veresov Attack", "Old Indian Defense", "Neo-Grünfeld Defense", "Black Knights' Tango", "Polish Defense", "Keres Defense", "Lundin Defense", "Döry Defense"),
+        new("Famous Gambits", "King's Gambit Accepted", "Evans Gambit", "Smith-Morra Gambit", "King's Gambit Declined", "Benko Gambit", "Englund Gambit", "Danish Gambit", "Budapest Gambit", "Stafford Gambit", "Albin Countergambit", "Vienna Gambit", "Blackmar-Diemer Gambit", "Tennison Gambit", "Falkbeer Countergambit", "Kieseritzky Gambit", "Urusov Gambit", "Latvian Gambit", "Elephant Gambit", "Halloween Gambit", "Göring Gambit", "Blumenfeld Gambit", "Rousseau Gambit", "Muzio Gambit", "Cochrane Gambit", "Colorado Gambit", "Jerome Gambit"),
+        new("Major Variations & Sub-Systems", "Najdorf Variation", "Morphy Defense", "Berlin Defense", "Advance Variation", "Exchange Variation", "Classical Variation", "Dragon Variation", "Sveshnikov Variation", "Fried Liver Attack", "Giuoco Pianissimo", "Marshall Attack", "Taimanov Variation", "Kan Variation", "Accelerated Dragon", "Alapin Sicilian", "Grand Prix Attack", "Bowdler Attack", "Winawer Variation", "Scheveningen Variation", "Rubinstein Variation", "Meran Variation", "Moscow Variation", "Yugoslav Attack", "Traxler Counterattack", "Steinitz Defense", "Botvinnik System", "Sämisch Variation", "Four Pawns Attack", "Panov-Botvinnik Attack", "Max Lange Attack", "Schliemann Defense", "Cambridge Springs Defense", "Breyer Variation", "Zaitsev Variation", "Karpov Variation", "Botvinnik Variation", "Tartakower Defense", "Lasker Defense", "Orthodox Defense", "Fianchetto Variation", "Averbakh Variation", "Cunningham Defense", "Levenfish Attack", "Nottingham Variation")
+    };
+
+    private sealed class OpeningCategory
+    {
+        public OpeningCategory(string name, params string[] openings)
+        {
+            Name = name;
+            Openings = openings;
+        }
+
+        public string Name { get; }
+        public IReadOnlyList<string> Openings { get; }
     }
 
     private sealed class LocalAccount
