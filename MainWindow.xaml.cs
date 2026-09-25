@@ -32,7 +32,7 @@ public sealed partial class MainWindow : Window
         appWindow.SetIcon(System.IO.Path.Combine(AppContext.BaseDirectory, "chessicon.ico"));
         RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
 
-        Title = "Chess v1.0.2-dev.4";
+        Title = "Chess v1.0.2-dev.5";
         if (!RestoreLoggedInAccount())
         {
             ShowLoginPrompt();
@@ -139,7 +139,7 @@ public sealed partial class MainWindow : Window
 
     private void Puzzles_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, PuzzlesButton);
 
-    private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, LearnButton);
+    private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(LearnContent, LearnButton);
 
     private void Settings_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, SettingsButton);
 
@@ -196,6 +196,7 @@ public sealed partial class MainWindow : Window
         HomeContent.Visibility = selectedContent == HomeContent ? Visibility.Visible : Visibility.Collapsed;
         BotsContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
         EngineContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
+        LearnContent.Visibility = selectedContent == LearnContent ? Visibility.Visible : Visibility.Collapsed;
         EmptyMenuContent.Visibility = selectedContent == EmptyMenuContent ? Visibility.Visible : Visibility.Collapsed;
         SetActiveNavigation(selectedButton ?? (selectedContent == HomeContent ? HomeButton : PlayButton));
     }

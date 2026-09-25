@@ -57,7 +57,7 @@
             <TextBlock x:Name="WelcomeMessageText" Foreground="#f2f2f2" FontSize="29" FontWeight="SemiBold" />
             <TextBlock Text="What would you like to do today?" Foreground="#8e8e8e" FontSize="14" Margin="0,5,0,0" />
           </StackPanel>
-          <TextBlock Text="Chess v1.0.2-dev.4" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#666666" FontSize="12" />
+          <TextBlock Text="Chess v1.0.2-dev.5" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#666666" FontSize="12" />
         </Grid>
 
         <Border Background="#171b17" BorderBrush="#303a30" BorderThickness="1" CornerRadius="10" Padding="20">
@@ -127,6 +127,48 @@
         <Button Grid.Row="2" Content="New game" Height="52" Background="#86c440" Foreground="#071006" FontSize="16" FontWeight="SemiBold" HorizontalContentAlignment="Center" CornerRadius="8" />
       </Grid>
     </Border>
+
+    <ScrollViewer x:Name="LearnContent" Grid.Column="1" Grid.ColumnSpan="2" Margin="28,16,28,18" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="16">
+        <Grid>
+          <StackPanel Spacing="4"><TextBlock Text="Learn" Foreground="#f2f2f2" FontSize="29" FontWeight="SemiBold" /><TextBlock Text="Master the game step-by-step or dive into a focused course." Foreground="#8e8e8e" FontSize="14" /></StackPanel>
+          <TextBlock Text="6 COURSES" HorizontalAlignment="Right" VerticalAlignment="Center" Foreground="#707070" FontSize="11" FontWeight="Bold" />
+        </Grid>
+        <Border Background="#171b17" BorderBrush="#303a30" BorderThickness="1" CornerRadius="10" Padding="18">
+          <Grid ColumnSpacing="24">
+            <StackPanel Spacing="6"><TextBlock Text="RESUME LEARNING" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="King &amp; Pawn Endgames" Foreground="#eeeeee" FontSize="20" FontWeight="SemiBold" /><TextBlock Text="The Rule of the Square  •  Lesson 4 of 12" Foreground="#999f99" FontSize="12" /><Border Height="5" Background="#2b322b" CornerRadius="3" Margin="0,5,0,0"><Border Width="110" Background="#86c440" CornerRadius="3" HorizontalAlignment="Left" /></Border></StackPanel>
+            <Button Grid.Column="1" Content="Resume lesson" Style="{StaticResource GreenActionButtonStyle}" Width="140" HorizontalAlignment="Right" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+        <Grid ColumnSpacing="18">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="0.85*" /><ColumnDefinition Width="1.5*" /></Grid.ColumnDefinitions>
+          <Border Background="#121412" BorderBrush="#292f29" BorderThickness="1" CornerRadius="9" Padding="18">
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="3"><TextBlock Text="SUGGESTED JOURNEY" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="A route through sections of your courses and libraries." Foreground="#858b85" FontSize="12" TextWrapping="Wrap" /></StackPanel>
+              <StackPanel Spacing="0">
+                <Border Padding="0,8"><Grid><Border Width="22" Height="22" CornerRadius="11" Background="#86c440" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="✓" Foreground="#071006" FontWeight="Bold" Width="22" Height="22" TextAlignment="Center" LineHeight="22" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" /></Border><StackPanel Margin="36,0,0,0"><TextBlock Text="Foundations" Foreground="#eeeeee" FontWeight="SemiBold" /><TextBlock Text="Complete  •  7 lessons" Foreground="#86c440" FontSize="11" /></StackPanel></Grid></Border>
+                <Border Padding="0,8"><Grid><Border Width="22" Height="22" CornerRadius="11" Background="#86c440" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="2" Foreground="#071006" FontWeight="Bold" Width="22" Height="22" TextAlignment="Center" LineHeight="22" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" /></Border><StackPanel Margin="36,0,0,0"><TextBlock Text="Core principles" Foreground="#eeeeee" FontWeight="SemiBold" /><TextBlock Text="In progress  •  4 of 8 lessons" Foreground="#a7b89d" FontSize="11" /></StackPanel></Grid></Border>
+                <Border Padding="0,8"><Grid><Border Width="22" Height="22" CornerRadius="11" Background="#303630" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="3" Foreground="#8d958d" FontWeight="Bold" Width="22" Height="22" TextAlignment="Center" LineHeight="22" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" /></Border><StackPanel Margin="36,0,0,0"><TextBlock Text="Basic tactics" Foreground="#a0a5a0" FontWeight="SemiBold" /><TextBlock Text="7 lessons" Foreground="#686f68" FontSize="11" /></StackPanel></Grid></Border>
+                <Border Padding="0,8"><Grid><Border Width="22" Height="22" CornerRadius="11" Background="#303630" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="4" Foreground="#8d958d" FontWeight="Bold" Width="22" Height="22" TextAlignment="Center" LineHeight="22" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" /></Border><StackPanel Margin="36,0,0,0"><TextBlock Text="Endgame essentials" Foreground="#a0a5a0" FontWeight="SemiBold" /><TextBlock Text="6 lessons" Foreground="#686f68" FontSize="11" /></StackPanel></Grid></Border>
+                <Border Padding="0,8"><Grid><Border Width="22" Height="22" CornerRadius="11" Background="#303630" HorizontalAlignment="Left" VerticalAlignment="Center"><TextBlock Text="5" Foreground="#8d958d" FontWeight="Bold" Width="22" Height="22" TextAlignment="Center" LineHeight="22" LineStackingStrategy="BlockLineHeight" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-1,0,0" /></Border><StackPanel Margin="36,0,0,0"><TextBlock Text="Strategic masterclass" Foreground="#a0a5a0" FontWeight="SemiBold" /><TextBlock Text="8 lessons" Foreground="#686f68" FontSize="11" /></StackPanel></Grid></Border>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Column="1" Spacing="12">
+            <TextBlock Text="STANDALONE COURSES &amp; LIBRARIES" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" />
+            <Grid ColumnSpacing="10" RowSpacing="10">
+              <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+              <Border Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="COURSE  •  FOUNDATIONS" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Chess basics" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Rules, pieces, notation and special moves." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="12 lessons  •  Beginner" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+              <Border Grid.Column="1" Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="COURSE  •  PRINCIPLES" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Chess principles" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Build habits around the center, development and king safety." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="10 lessons  •  Beginner" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+              <Border Grid.Row="1" Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="LIBRARY  •  OPENINGS" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Opening library" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="A growing database for exploring openings, plans and deep study." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="14 lessons  •  Beginner-Advanced" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+              <Border Grid.Row="1" Grid.Column="1" Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="COURSE  •  TACTICS" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Mating strategies" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Recognize patterns and attack the castled king." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="9 lessons  •  Beginner-Advanced" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+              <Border Grid.Row="2" Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="COURSE  •  POSITIONAL PLAY" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Midgame strategy" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Pawn structures, piece placement and prophylaxis." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="11 lessons  •  Intermediate-Advanced" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+              <Border Grid.Row="2" Grid.Column="1" Background="#151715" BorderBrush="#2d352d" BorderThickness="1" CornerRadius="8" Padding="14"><StackPanel Spacing="7"><TextBlock Text="COURSE  •  ENDGAMES" Foreground="#86c440" FontSize="10" FontWeight="Bold" /><TextBlock Text="Endgame mastery" Foreground="#eeeeee" FontSize="17" FontWeight="SemiBold" /><TextBlock Text="Convert wins and save drawn positions." Foreground="#858b85" FontSize="11" TextWrapping="Wrap" /><TextBlock Text="13 lessons  •  Intermediate-Advanced" Foreground="#666e66" FontSize="10" /></StackPanel></Border>
+            </Grid>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
 
     <Grid x:Name="EmptyMenuContent" Grid.Column="1" Grid.ColumnSpan="2" Visibility="Collapsed" />
 

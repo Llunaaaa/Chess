@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "1.0.2-dev.4",
+    [string]$Version = "1.0.2-dev.5",
     [string]$Configuration = "Release",
     [string]$CertificatePath = "",
     [string]$CertificatePassword = "",
@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 $Version = $Version.TrimStart("v")
 if ($Version -notmatch "^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$") {
-    throw "Version must use semantic versioning, for example 1.0.2-dev.4."
+    throw "Version must use semantic versioning, for example 1.0.2-dev.5."
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
