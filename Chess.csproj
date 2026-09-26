@@ -31,6 +31,7 @@
     <AppxManifest Include="$(ChessPackageManifest)" Condition="'$(ChessPackaged)' == 'true'" />
     <Content Include="chessicon.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="WelcomeMessages.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Pieces\**\*.svg" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Sounds\Reference\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="PackageAssets\**\*" Condition="'$(ChessPackaged)' == 'true'" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

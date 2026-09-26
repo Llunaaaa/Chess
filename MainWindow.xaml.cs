@@ -6,12 +6,14 @@ using System.Text;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Chess.Models;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
 using Windows.System;
 
@@ -26,6 +28,9 @@ public sealed partial class MainWindow : Window
     private ScrollViewer? activeScrollViewer;
     private int scrollDirection;
     private double scrollVelocity;
+    private readonly ChessBoard foundationsBoard = ChessBoard.CreateInitialPosition();
+    private readonly Dictionary<BoardSquare, Image> foundationsPieceImages = new();
+    private FoundationsLessonStep foundationsStep = FoundationsLessonStep.Welcome;
 
     public MainWindow()
     {
@@ -38,6 +43,8 @@ public sealed partial class MainWindow : Window
         RootGrid.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(RootGrid_KeyDown), true);
         RootGrid.AddHandler(UIElement.KeyUpEvent, new KeyEventHandler(RootGrid_KeyUp), true);
         CompositionTarget.Rendering += OnFrame;
+        foundationsBoard.PromotionRequested += FoundationsBoard_PromotionRequested;
+        GenerateFoundationsBoard();
 
         Title = "Chess v1.0.2-dev.6";
         if (!RestoreLoggedInAccount())
@@ -206,6 +213,12 @@ public sealed partial class MainWindow : Window
 
     private void Learn_Click(object sender, RoutedEventArgs e) => ShowMenu(LearnContent, LearnButton);
 
+    private void Foundations_Click(object sender, RoutedEventArgs e)
+    {
+        InitializeFoundationsLesson();
+        ShowMenu(FoundationsLessonContent, LearnButton);
+    }
+
     private void BlankLearnOption_Click(object sender, RoutedEventArgs e) => ShowMenu(EmptyMenuContent, LearnButton);
 
     private void OpeningLibrary_Click(object sender, RoutedEventArgs e)
@@ -231,6 +244,10 @@ public sealed partial class MainWindow : Window
             BackToOpeningLibrary_Click(this, new RoutedEventArgs());
         }
         else if (activeContent == OpeningLibraryContent)
+        {
+            BackToLearn_Click(this, new RoutedEventArgs());
+        }
+        else if (activeContent == FoundationsLessonContent)
         {
             BackToLearn_Click(this, new RoutedEventArgs());
         }
@@ -289,6 +306,10 @@ public sealed partial class MainWindow : Window
         {
             SetWelcomeMessage();
         }
+        else if (selectedContent == LearnContent)
+        {
+            UpdateLearningDashboard();
+        }
 
         HomeContent.Visibility = selectedContent == HomeContent ? Visibility.Visible : Visibility.Collapsed;
         BotsContent.Visibility = selectedContent == BotsContent ? Visibility.Visible : Visibility.Collapsed;
@@ -297,8 +318,171 @@ public sealed partial class MainWindow : Window
         OpeningLibraryContent.Visibility = selectedContent == OpeningLibraryContent ? Visibility.Visible : Visibility.Collapsed;
         OpeningListContent.Visibility = selectedContent == OpeningListContent ? Visibility.Visible : Visibility.Collapsed;
         OpeningLessonContent.Visibility = selectedContent == OpeningLessonContent ? Visibility.Visible : Visibility.Collapsed;
+        FoundationsLessonContent.Visibility = selectedContent == FoundationsLessonContent ? Visibility.Visible : Visibility.Collapsed;
         EmptyMenuContent.Visibility = selectedContent == EmptyMenuContent ? Visibility.Visible : Visibility.Collapsed;
         SetActiveNavigation(selectedButton ?? (selectedContent == HomeContent ? HomeButton : PlayButton));
+    }
+
+    private void InitializeFoundationsLesson()
+    {
+        var account = GetCurrentAccount();
+        foundationsStep = account is null
+            ? FoundationsLessonStep.Welcome
+            : LearningProgress.GetFoundationsStep(account.Data.Progression);
+
+        foundationsBoard.LoadInitialPosition();
+        FoundationsLessonMessage.Text = foundationsStep == FoundationsLessonStep.Welcome
+            ? "Welcome to Chess!"
+            : "Every game begins from this position.";
+        FoundationsLessonStepText.Text = foundationsStep == FoundationsLessonStep.Welcome
+            ? "Lesson 1 of 7"
+            : "Lesson 1 of 7  •  In progress";
+        FoundationsNextButton.Content = "Next";
+        FoundationsNextButton.IsEnabled = foundationsStep == FoundationsLessonStep.Welcome;
+        FoundationsPromotionPanel.Visibility = Visibility.Collapsed;
+        RenderFoundationsBoard();
+    }
+
+    private void FoundationsNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (foundationsStep != FoundationsLessonStep.Welcome)
+        {
+            return;
+        }
+
+        foundationsStep = FoundationsLessonStep.InitialPositionVisible;
+        foundationsBoard.LoadInitialPosition();
+        FoundationsLessonMessage.Text = "Every game begins from this position.";
+        FoundationsLessonStepText.Text = "Lesson 1 of 7  •  In progress";
+        FoundationsNextButton.IsEnabled = false;
+        RenderFoundationsBoard();
+
+        var accounts = LoadAccounts();
+        var account = accounts.Find(candidate => string.Equals(candidate.Username, AccountNameText.Text, StringComparison.OrdinalIgnoreCase));
+        if (account is not null)
+        {
+            account.Data.Progression[LearningProgressKeys.FoundationsStep] = foundationsStep.ToString();
+            account.Data.Progression[LearningProgressKeys.FoundationsStarted] = "true";
+            account.Data.Progression[LearningProgressKeys.FoundationsCourse] = "in_progress";
+            SaveAccounts(accounts);
+        }
+
+        UpdateLearningDashboard();
+    }
+
+    private void GenerateFoundationsBoard()
+    {
+        FoundationsBoardGrid.Children.Clear();
+        FoundationsBoardGrid.RowDefinitions.Clear();
+        FoundationsBoardGrid.ColumnDefinitions.Clear();
+        foundationsPieceImages.Clear();
+        for (var index = 0; index < 8; index++)
+        {
+            FoundationsBoardGrid.RowDefinitions.Add(new RowDefinition());
+            FoundationsBoardGrid.ColumnDefinitions.Add(new ColumnDefinition());
+        }
+
+        for (var row = 0; row < 8; row++)
+        {
+            for (var column = 0; column < 8; column++)
+            {
+                var square = new Grid
+                {
+                    Background = new SolidColorBrush((row + column) % 2 == 0
+                        ? Windows.UI.Color.FromArgb(255, 217, 195, 157)
+                        : Windows.UI.Color.FromArgb(255, 135, 103, 70))
+                };
+                var image = new Image
+                {
+                    Margin = new Thickness(8),
+                    Stretch = Stretch.Uniform,
+                    Visibility = Visibility.Collapsed
+                };
+                square.Children.Add(image);
+                foundationsPieceImages[new BoardSquare(row, column)] = image;
+
+                if (row == 7)
+                {
+                    square.Children.Add(new TextBlock
+                    {
+                        Text = ((char)('a' + column)).ToString(),
+                        Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 35, 29, 22)),
+                        FontSize = 12,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        Margin = new Thickness(0, 0, 5, 3)
+                    });
+                }
+
+                if (column == 0)
+                {
+                    square.Children.Add(new TextBlock
+                    {
+                        Text = (8 - row).ToString(),
+                        Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(180, 35, 29, 22)),
+                        FontSize = 12,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        VerticalAlignment = VerticalAlignment.Top,
+                        Margin = new Thickness(5, 3, 0, 0)
+                    });
+                }
+
+                Grid.SetRow(square, row);
+                Grid.SetColumn(square, column);
+                FoundationsBoardGrid.Children.Add(square);
+            }
+        }
+    }
+
+    private void RenderFoundationsBoard()
+    {
+        var showPieces = foundationsStep == FoundationsLessonStep.InitialPositionVisible;
+        for (var row = 0; row < 8; row++)
+        {
+            for (var column = 0; column < 8; column++)
+            {
+                var image = foundationsPieceImages[new BoardSquare(row, column)];
+                var piece = foundationsBoard[row, column];
+                image.Source = showPieces && piece is not null
+                    ? new SvgImageSource { UriSource = new Uri(ChessBoard.GetPieceAssetUri(piece)) }
+                    : null;
+                image.Visibility = showPieces && piece is not null ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+    }
+
+    private void FoundationsBoard_PromotionRequested(object? sender, PromotionRequestedEventArgs e)
+    {
+        FoundationsPromotionPanel.Visibility = Visibility.Visible;
+    }
+
+    private void PromotionChoice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string pieceName } || !Enum.TryParse<PieceType>(pieceName, out var pieceType))
+        {
+            return;
+        }
+
+        if (foundationsBoard.ChoosePromotion(pieceType))
+        {
+            FoundationsPromotionPanel.Visibility = Visibility.Collapsed;
+            RenderFoundationsBoard();
+        }
+    }
+
+    private void UpdateLearningDashboard()
+    {
+        var progression = GetCurrentAccount()?.Data.Progression;
+        var step = progression is null ? FoundationsLessonStep.Welcome : LearningProgress.GetFoundationsStep(progression);
+        var started = step != FoundationsLessonStep.Welcome;
+        FoundationsResumeTitle.Text = started ? "Foundations" : "Start with Foundations";
+        FoundationsResumeDetail.Text = "Welcome to Chess  •  Lesson 1 of 7";
+        FoundationsResumeAction.Content = started ? "Continue lesson" : "Start lesson";
+        FoundationsProgressText.Text = started ? "In progress  •  1 of 7 lessons" : "Not started  •  0 of 7 lessons";
+        FoundationsJourneyStatus.Text = started ? "In progress  •  1 of 7 lessons" : "Not started  •  0 of 7 lessons";
+        FoundationsJourneyMarker.Background = new SolidColorBrush(started
+            ? Windows.UI.Color.FromArgb(255, 134, 196, 64)
+            : Windows.UI.Color.FromArgb(255, 48, 54, 48));
     }
 
     private void BuildOpeningCategories()
@@ -569,6 +753,15 @@ public sealed partial class MainWindow : Window
                     account.Data.GameLog ??= new List<string>();
                     account.Data.Preferences ??= new Dictionary<string, string>();
                 }
+                var migrated = false;
+                foreach (var account in accounts)
+                {
+                    migrated |= EnsureLearningProgress(account);
+                }
+                if (migrated)
+                {
+                    SaveAccounts(accounts);
+                }
                 return accounts;
             }
         }
@@ -577,6 +770,34 @@ public sealed partial class MainWindow : Window
         }
 
         return new List<LocalAccount>();
+    }
+
+    private LocalAccount? GetCurrentAccount()
+    {
+        if (string.Equals(AccountNameText.Text, "Guest", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return LoadAccounts().Find(account => string.Equals(account.Username, AccountNameText.Text, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool EnsureLearningProgress(LocalAccount account)
+    {
+        var progression = account.Data.Progression;
+        if (progression.TryGetValue(LearningProgressKeys.SchemaVersion, out var schemaVersion)
+            && schemaVersion == LearningProgressKeys.CurrentSchemaVersion)
+        {
+            return false;
+        }
+
+        progression[LearningProgressKeys.SchemaVersion] = LearningProgressKeys.CurrentSchemaVersion;
+        progression[LearningProgressKeys.FoundationsStep] = FoundationsLessonStep.Welcome.ToString();
+        progression[LearningProgressKeys.FoundationsStarted] = "false";
+        progression[LearningProgressKeys.FoundationsCompletedLessons] = "0";
+        progression[LearningProgressKeys.CurrentFoundationsLesson] = LearningProgressKeys.FoundationsLessonId;
+        progression[LearningProgressKeys.FoundationsCourse] = "not_started";
+        return true;
     }
 
     private void SaveAccounts(List<LocalAccount> accounts)
