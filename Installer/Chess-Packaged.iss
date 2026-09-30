@@ -1,7 +1,7 @@
 #define AppName "Chess"
 #define AppPublisher "Chess"
 #ifndef AppVersion
-	#define AppVersion "1.0.2-dev.6"
+	#define AppVersion "1.0.2-dev.7"
 #endif
 
 [Setup]
