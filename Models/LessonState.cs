@@ -5,6 +5,9 @@ namespace Chess.Models;
 public enum FoundationsLessonStep
 {
     Welcome,
+    IntroductionVisible,
+    TimeVisible,
+    IncrementVisible,
     InitialPositionVisible
 }
 

@@ -102,6 +102,19 @@ public sealed class ChessBoard
         return board;
     }
 
+    public void ClearPosition()
+    {
+        for (var row = 0; row < 8; row++)
+        {
+            for (var column = 0; column < 8; column++)
+            {
+                this[row, column] = null;
+            }
+        }
+
+        PendingPromotion = null;
+    }
+
     public void LoadInitialPosition()
     {
         for (var row = 0; row < 8; row++)
