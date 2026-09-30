@@ -46,7 +46,7 @@ public sealed partial class MainWindow : Window
         foundationsBoard.PromotionRequested += FoundationsBoard_PromotionRequested;
         GenerateFoundationsBoard();
 
-        Title = "Chess v1.0.2-dev.6";
+        Title = "Chess v1.0.2-dev.7";
         if (!RestoreLoggedInAccount())
         {
             ShowLoginPrompt();
@@ -330,31 +330,49 @@ public sealed partial class MainWindow : Window
             ? FoundationsLessonStep.Welcome
             : LearningProgress.GetFoundationsStep(account.Data.Progression);
 
-        foundationsBoard.LoadInitialPosition();
-        FoundationsLessonMessage.Text = foundationsStep == FoundationsLessonStep.Welcome
-            ? "Welcome to Chess!"
-            : "Every game begins from this position.";
+        foundationsBoard.ClearPosition();
         FoundationsLessonStepText.Text = foundationsStep == FoundationsLessonStep.Welcome
-            ? "Lesson 1 of 7"
-            : "Lesson 1 of 7  •  In progress";
+            ? "The basics  •  Lesson 1 of 5"
+            : "The basics  •  Lesson 1 of 5  •  In progress";
         FoundationsNextButton.Content = "Next";
-        FoundationsNextButton.IsEnabled = foundationsStep == FoundationsLessonStep.Welcome;
+        FoundationsNextButton.IsEnabled = foundationsStep != FoundationsLessonStep.IncrementVisible;
         FoundationsPromotionPanel.Visibility = Visibility.Collapsed;
+        if (foundationsStep == FoundationsLessonStep.IncrementVisible)
+        {
+            ShowFoundationsIncrementLesson();
+        }
+        else if (foundationsStep == FoundationsLessonStep.TimeVisible)
+        {
+            ShowFoundationsTimeLesson();
+        }
+        else
+        {
+            ShowFoundationsIntroduction();
+        }
         RenderFoundationsBoard();
     }
 
     private void FoundationsNext_Click(object sender, RoutedEventArgs e)
     {
-        if (foundationsStep != FoundationsLessonStep.Welcome)
+        if (foundationsStep == FoundationsLessonStep.IncrementVisible)
         {
             return;
         }
 
-        foundationsStep = FoundationsLessonStep.InitialPositionVisible;
-        foundationsBoard.LoadInitialPosition();
-        FoundationsLessonMessage.Text = "Every game begins from this position.";
-        FoundationsLessonStepText.Text = "Lesson 1 of 7  •  In progress";
-        FoundationsNextButton.IsEnabled = false;
+        foundationsStep = foundationsStep == FoundationsLessonStep.TimeVisible
+            ? FoundationsLessonStep.IncrementVisible
+            : FoundationsLessonStep.TimeVisible;
+        foundationsBoard.ClearPosition();
+        FoundationsLessonStepText.Text = "The basics  •  Lesson 1 of 5  •  In progress";
+        FoundationsNextButton.IsEnabled = foundationsStep != FoundationsLessonStep.IncrementVisible;
+        if (foundationsStep == FoundationsLessonStep.IncrementVisible)
+        {
+            ShowFoundationsIncrementLesson();
+        }
+        else
+        {
+            ShowFoundationsTimeLesson();
+        }
         RenderFoundationsBoard();
 
         var accounts = LoadAccounts();
@@ -368,6 +386,33 @@ public sealed partial class MainWindow : Window
         }
 
         UpdateLearningDashboard();
+    }
+
+    private void ShowFoundationsIntroduction()
+    {
+        FoundationsLessonHeading.Text = "What is chess?";
+        FoundationsLessonMessage.Text = "Chess is a two-player strategy game played on an 8×8 board. Each side commands sixteen pieces, and every move changes the position.";
+        FoundationsLessonDetailLabel.Text = "THE OBJECTIVE";
+        FoundationsLessonDetail.Text = "Checkmate the opposing king: place it under attack with no legal move left.";
+        FoundationsLessonHint.Text = "Learn how each piece moves, then use them together to create threats and protect your king.";
+    }
+
+    private void ShowFoundationsTimeLesson()
+    {
+        FoundationsLessonHeading.Text = "Time is part of the game";
+        FoundationsLessonMessage.Text = "In most chess games, each side gets an agreed amount of time for the whole game.";
+        FoundationsLessonDetailLabel.Text = "HOW THE CLOCK WORKS";
+        FoundationsLessonDetail.Text = "When it is your turn, your clock counts down. After you move, your clock pauses and your opponent's clock starts.";
+        FoundationsLessonHint.Text = "Good chess decisions balance the position on the board with the time left on the clock.";
+    }
+
+    private void ShowFoundationsIncrementLesson()
+    {
+        FoundationsLessonHeading.Text = "Time can be added as you play";
+        FoundationsLessonMessage.Text = "Some time controls give you a small bonus whenever you make a move, helping intense low-time games stay playable.";
+        FoundationsLessonDetailLabel.Text = "EXAMPLE: 10+2 Rapid";
+        FoundationsLessonDetail.Text = "Each player starts with 10 minutes. After every move, 2 seconds are added to the clock of the player who moved.";
+        FoundationsLessonHint.Text = "The first number is the starting time (in minutes), while the second number is the bonus time (in seconds).";
     }
 
     private void GenerateFoundationsBoard()
@@ -436,19 +481,28 @@ public sealed partial class MainWindow : Window
 
     private void RenderFoundationsBoard()
     {
-        var showPieces = foundationsStep == FoundationsLessonStep.InitialPositionVisible;
         for (var row = 0; row < 8; row++)
         {
             for (var column = 0; column < 8; column++)
             {
                 var image = foundationsPieceImages[new BoardSquare(row, column)];
                 var piece = foundationsBoard[row, column];
-                image.Source = showPieces && piece is not null
-                    ? new SvgImageSource { UriSource = new Uri(ChessBoard.GetPieceAssetUri(piece)) }
+                image.Source = piece is not null
+                    ? CreatePieceImageSource(piece)
                     : null;
-                image.Visibility = showPieces && piece is not null ? Visibility.Visible : Visibility.Collapsed;
+                image.Visibility = piece is not null ? Visibility.Visible : Visibility.Collapsed;
             }
         }
+    }
+
+    private static SvgImageSource CreatePieceImageSource(ChessPiece piece)
+    {
+        return new SvgImageSource
+        {
+            UriSource = new Uri(ChessBoard.GetPieceAssetUri(piece)),
+            RasterizePixelWidth = 96,
+            RasterizePixelHeight = 96
+        };
     }
 
     private void FoundationsBoard_PromotionRequested(object? sender, PromotionRequestedEventArgs e)
@@ -475,11 +529,11 @@ public sealed partial class MainWindow : Window
         var progression = GetCurrentAccount()?.Data.Progression;
         var step = progression is null ? FoundationsLessonStep.Welcome : LearningProgress.GetFoundationsStep(progression);
         var started = step != FoundationsLessonStep.Welcome;
-        FoundationsResumeTitle.Text = started ? "Foundations" : "Start with Foundations";
-        FoundationsResumeDetail.Text = "Welcome to Chess  •  Lesson 1 of 7";
+        FoundationsResumeTitle.Text = started ? "The basics" : "Start with Foundations";
+        FoundationsResumeDetail.Text = "Welcome to Chess  •  Lesson 1 of 5";
         FoundationsResumeAction.Content = started ? "Continue lesson" : "Start lesson";
-        FoundationsProgressText.Text = started ? "In progress  •  1 of 7 lessons" : "Not started  •  0 of 7 lessons";
-        FoundationsJourneyStatus.Text = started ? "In progress  •  1 of 7 lessons" : "Not started  •  0 of 7 lessons";
+        FoundationsProgressText.Text = started ? "In progress  •  1 of 5 lessons" : "Not started  •  0 of 5 lessons";
+        FoundationsJourneyStatus.Text = started ? "In progress  •  1 of 5 lessons" : "Not started  •  0 of 5 lessons";
         FoundationsJourneyMarker.Background = new SolidColorBrush(started
             ? Windows.UI.Color.FromArgb(255, 134, 196, 64)
             : Windows.UI.Color.FromArgb(255, 48, 54, 48));
